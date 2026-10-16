@@ -16,4 +16,13 @@ terraform {
 provider "aws" {
   region  = "eu-north-1"
   profile = "lab"
+
+  # Tags added automatically to every resource this provider creates
+  default_tags {
+    tags = {
+      Project     = "aws-platform-iac"
+      Environment = "dev"
+      ManagedBy   = "terraform"
+    }
+  }
 }
