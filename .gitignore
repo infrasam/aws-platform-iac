@@ -1,0 +1,28 @@
+# Terraform provider and module cache
+.terraform/
+
+# State and saved plans can contain secrets
+*.tfstate
+*.tfstate.*
+*.tfplan
+
+# Variable files often hold secrets or account-specific values
+*.tfvars
+*.tfvars.json
+
+# Local override files and crash logs
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+crash.log
+crash.*.log
+
+# Cluster credentials (Talos and Kubernetes)
+talosconfig
+kubeconfig
+*.kubeconfig
+
+# Local environment files
+.env
+.env.*
