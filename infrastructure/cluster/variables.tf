@@ -33,3 +33,8 @@ variable "public_subnets" {
   type        = map(string)
 }
 
+# Public IPs allowed to reach the Talos and Kubernetes APIs, set via TF_VAR_admin_cidrs
+variable "admin_cidrs" {
+  description = "CIDR blocks allowed to reach the Talos and Kubernetes APIs"
+  type        = list(string)
+}

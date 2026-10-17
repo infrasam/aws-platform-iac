@@ -9,3 +9,9 @@ output "public_subnet_ids" {
   description = "Map of AZ letter to public subnet ID"
   value       = { for az, subnet in aws_subnet.public : az => subnet.id }
 }
+
+# Security group ID, attached to every cluster node
+output "cluster_security_group_id" {
+  description = "ID of the cluster security group"
+  value       = aws_security_group.cluster.id
+}
