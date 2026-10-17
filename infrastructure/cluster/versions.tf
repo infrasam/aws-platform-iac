@@ -14,14 +14,14 @@ terraform {
 
 # AWS connection settings
 provider "aws" {
-  region  = "eu-north-1"
+  region  = var.region
   profile = "lab"
 
   # Tags added automatically to every resource this provider creates
   default_tags {
     tags = {
-      Project     = "aws-platform-iac"
-      Environment = "dev"
+      Project     = var.project
+      Environment = var.environment
       ManagedBy   = "terraform"
     }
   }

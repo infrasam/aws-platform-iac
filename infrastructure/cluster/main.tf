@@ -1,10 +1,16 @@
+locals {
+  # Prefix for all resource names, e.g. aws-platform-iac-dev
+  name_prefix = "${var.project}-${var.environment}"
+}
+
 # Isolated network for the cluster
 resource "aws_vpc" "this" {
-  cidr_block           = "10.0.0.0/16"
+  cidr_block           = var.vpc_cidr
   enable_dns_support   = true
   enable_dns_hostnames = true
 
   tags = {
-    Name = "aws-platform-iac-dev-vpc"
+    Name = "${local.name_prefix}-vpc"
   }
 }
+

@@ -9,6 +9,8 @@
 # Variable files often hold secrets or account-specific values
 *.tfvars
 *.tfvars.json
+# Except committed per-environment settings (never put secrets here)
+!**/environments/*.tfvars
 
 # Local override files and crash logs
 override.tf
