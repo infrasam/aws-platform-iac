@@ -3,14 +3,16 @@ locals {
   name_prefix = "${var.project}-${var.environment}"
 }
 
-# Isolated network for the cluster
-resource "aws_vpc" "this" {
-  cidr_block           = var.vpc_cidr
-  enable_dns_support   = true
-  enable_dns_hostnames = true
+# Network for the cluster: VPC, later subnets and routing
+module "network" {
+  source = "../modules/network"
 
-  tags = {
-    Name = "${local.name_prefix}-vpc"
-  }
+  name_prefix = local.name_prefix
+  vpc_cidr    = var.vpc_cidr
 }
 
+# The VPC moved into the network module, keep it instead of recreating it
+moved {
+  from = aws_vpc.this
+  to   = module.network.aws_vpc.this
+}
