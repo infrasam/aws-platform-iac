@@ -3,12 +3,13 @@ locals {
   name_prefix = "${var.project}-${var.environment}"
 }
 
-# Network for the cluster: VPC, later subnets and routing
+# Network for the cluster: VPC, subnets and routing
 module "network" {
   source = "../modules/network"
 
-  name_prefix = local.name_prefix
-  vpc_cidr    = var.vpc_cidr
+  name_prefix    = local.name_prefix
+  vpc_cidr       = var.vpc_cidr
+  public_subnets = var.public_subnets
 }
 
 # The VPC moved into the network module, keep it instead of recreating it

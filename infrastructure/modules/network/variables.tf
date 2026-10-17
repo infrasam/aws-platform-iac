@@ -9,3 +9,9 @@ variable "vpc_cidr" {
   description = "CIDR block for the VPC"
   type        = string
 }
+
+# Public subnets: AZ letter => CIDR block
+variable "public_subnets" {
+  description = "Map of availability zone letter to subnet CIDR"
+  type        = map(string)
+}
