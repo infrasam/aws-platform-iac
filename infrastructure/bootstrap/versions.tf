@@ -1,6 +1,6 @@
 terraform {
   # Minimum Terraform version this code requires
-  required_version = ">= 1.14"
+  required_version = ">= 1.16"
 
   required_providers {
     aws = {
