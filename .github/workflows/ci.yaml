@@ -20,6 +20,23 @@ jobs:
           terraform_version: 1.16.6
       - run: terraform fmt -check -recursive
 
+  # Check that each stack is valid Terraform, without touching AWS
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        stack: [bootstrap, cluster]
+    defaults:
+      run:
+        working-directory: infrastructure/${{ matrix.stack }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.16.6
+      - run: terraform init -backend=false
+      - run: terraform validate
+
   # Scan the full git history for secrets
   gitleaks:
     runs-on: ubuntu-latest
