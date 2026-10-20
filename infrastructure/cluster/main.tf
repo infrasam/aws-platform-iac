@@ -18,3 +18,15 @@ moved {
   from = aws_vpc.this
   to   = module.network.aws_vpc.this
 }
+
+# Cluster nodes running Talos Linux
+module "node" {
+  source = "../modules/node"
+
+  name_prefix       = local.name_prefix
+  talos_version     = var.talos_version
+  instance_type     = var.instance_type
+  nodes             = var.nodes
+  subnet_ids        = module.network.public_subnet_ids
+  security_group_id = module.network.cluster_security_group_id
+}

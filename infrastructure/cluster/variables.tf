@@ -38,3 +38,21 @@ variable "admin_cidrs" {
   description = "CIDR blocks allowed to reach the Talos and Kubernetes APIs"
   type        = list(string)
 }
+
+# Talos version, used to find the matching image
+variable "talos_version" {
+  description = "Talos Linux version, e.g. v1.14.4"
+  type        = string
+}
+
+# EC2 size for every node
+variable "instance_type" {
+  description = "EC2 instance type for the nodes"
+  type        = string
+}
+
+# Nodes to create: node name => AZ letter
+variable "nodes" {
+  description = "Map of node name to availability zone letter"
+  type        = map(string)
+}
