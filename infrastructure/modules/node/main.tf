@@ -44,3 +44,15 @@ resource "aws_instance" "this" {
     Name = "${var.name_prefix}-node-${each.key}"
   }
 }
+
+# Fixed public IP per node, survives stop and start
+resource "aws_eip" "this" {
+  for_each = var.nodes
+
+  instance = aws_instance.this[each.key].id
+  domain   = "vpc"
+
+  tags = {
+    Name = "${var.name_prefix}-eip-${each.key}"
+  }
+}
