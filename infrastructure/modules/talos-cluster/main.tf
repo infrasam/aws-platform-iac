@@ -21,17 +21,23 @@ resource "talos_machine_configuration_apply" "control_plane" {
   node                        = each.value
 
   config_patches = [
+    # Disk Talos installs itself on
     yamlencode({
-      # Disk Talos installs itself on
-      machine = {
-        install = {
-          disk = "/dev/nvme0n1"
+      apiVersion = "v1alpha1"
+      kind       = "UnattendedInstallConfig"
+      provisioning = {
+        diskSelector = {
+          match = "disk.dev_path == \"/dev/nvme0n1\""
         }
       }
-      # Single node cluster, so normal workloads must run on the control plane
-      cluster = {
-        allowSchedulingOnControlPlanes = true
+    }),
+    # Single node cluster: remove the control plane taint so normal workloads can run here
+    yamlencode({
+      apiVersion = "v1alpha1"
+      kind       = "KubeNodeConfig"
+      taints = {
+        "$patch" = "delete"
       }
-    })
+    }),
   ]
 }
