@@ -9,6 +9,12 @@ terraform {
       # Allowed provider versions
       version = "~> 6.69"
     }
+    talos = {
+      # Talks to the Talos API on the nodes
+      source = "siderolabs/talos"
+      # Allowed provider versions
+      version = "~> 0.12"
+    }
   }
 }
 
