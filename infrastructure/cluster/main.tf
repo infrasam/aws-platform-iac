@@ -30,3 +30,10 @@ module "node" {
   subnet_ids        = module.network.public_subnet_ids
   security_group_id = module.network.cluster_security_group_id
 }
+
+# Talos configuration and Kubernetes bootstrap for the nodes
+module "talos_cluster" {
+  source = "../modules/talos-cluster"
+
+  talos_version = var.talos_version
+}
