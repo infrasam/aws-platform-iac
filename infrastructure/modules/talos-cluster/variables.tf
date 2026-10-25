@@ -16,8 +16,14 @@ variable "cluster_endpoint" {
   type        = string
 }
 
-# Control plane nodes: node name => IP reachable from where Terraform runs
+# Control plane nodes: node name => private IP, how the node knows itself
 variable "control_plane_nodes" {
-  description = "Map of control plane node name to IP"
+  description = "Map of control plane node name to private IP"
+  type        = map(string)
+}
+
+# Control plane endpoints: node name => public IP, the door Terraform knocks on
+variable "control_plane_endpoints" {
+  description = "Map of control plane node name to public IP"
   type        = map(string)
 }

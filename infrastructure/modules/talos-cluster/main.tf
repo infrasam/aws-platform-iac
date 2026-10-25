@@ -19,6 +19,7 @@ resource "talos_machine_configuration_apply" "control_plane" {
   client_configuration        = talos_machine_secrets.this.client_configuration
   machine_configuration_input = data.talos_machine_configuration.control_plane.machine_configuration
   node                        = each.value
+  endpoint                    = var.control_plane_endpoints[each.key]
 
   config_patches = [
     # Disk Talos installs itself on
@@ -44,12 +45,13 @@ resource "talos_machine_configuration_apply" "control_plane" {
 
 locals {
   # First control plane node, used for bootstrap and to fetch the kubeconfig
-  first_control_plane = values(var.control_plane_nodes)[0]
+  first_control_plane = keys(var.control_plane_nodes)[0]
 }
 
 # Start etcd and Kubernetes, done once in the cluster's life on the first node
 resource "talos_machine_bootstrap" "this" {
-  node                 = local.first_control_plane
+  node                 = var.control_plane_nodes[local.first_control_plane]
+  endpoint             = var.control_plane_endpoints[local.first_control_plane]
   client_configuration = talos_machine_secrets.this.client_configuration
 
   # The node must have its config before it can be bootstrapped
@@ -58,7 +60,8 @@ resource "talos_machine_bootstrap" "this" {
 
 # Admin kubeconfig for kubectl, fetched after bootstrap
 resource "talos_cluster_kubeconfig" "this" {
-  node                 = local.first_control_plane
+  node                 = var.control_plane_nodes[local.first_control_plane]
+  endpoint             = var.control_plane_endpoints[local.first_control_plane]
   client_configuration = talos_machine_secrets.this.client_configuration
 
   # Kubernetes must be running before a kubeconfig can be fetched
@@ -69,6 +72,6 @@ resource "talos_cluster_kubeconfig" "this" {
 data "talos_client_configuration" "this" {
   cluster_name         = var.cluster_name
   client_configuration = talos_machine_secrets.this.client_configuration
-  endpoints            = values(var.control_plane_nodes)
+  endpoints            = values(var.control_plane_endpoints)
   nodes                = values(var.control_plane_nodes)
 }
