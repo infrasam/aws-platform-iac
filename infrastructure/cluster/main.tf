@@ -35,9 +35,10 @@ module "node" {
 module "talos_cluster" {
   source = "../modules/talos-cluster"
 
-  talos_version       = var.talos_version
-  cluster_name        = local.name_prefix
-  control_plane_nodes = module.node.public_ips
+  talos_version           = var.talos_version
+  cluster_name            = local.name_prefix
+  control_plane_nodes     = module.node.private_ips
+  control_plane_endpoints = module.node.public_ips
 
   # First node is the API endpoint, several nodes would use a load balancer
   cluster_endpoint = "https://${values(module.node.public_ips)[0]}:6443"
