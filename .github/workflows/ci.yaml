@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        stack: [bootstrap, cluster]
+        stack: [bootstrap, cluster, platform]
     defaults:
       run:
         working-directory: infrastructure/${{ matrix.stack }}
