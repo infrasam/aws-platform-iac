@@ -15,3 +15,9 @@ variable "state_bucket" {
   description = "S3 bucket with Terraform state"
   type        = string
 }
+
+# Argo CD Helm chart version
+variable "argocd_chart_version" {
+  description = "Version of the argo-cd Helm chart"
+  type        = string
+}

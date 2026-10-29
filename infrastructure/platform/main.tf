@@ -17,9 +17,13 @@ locals {
   user       = local.kubeconfig.users[0].user
 }
 
-# Temporary check that the providers can reach the cluster
-data "kubernetes_namespace_v1" "kube_system" {
-  metadata {
-    name = "kube-system"
-  }
+# Argo CD, installed once by Terraform and managed with GitOps from then on
+resource "helm_release" "argocd" {
+  name             = "argocd"
+  namespace        = "argocd"
+  create_namespace = true
+
+  repository = "https://argoproj.github.io/argo-helm"
+  chart      = "argo-cd"
+  version    = var.argocd_chart_version
 }
