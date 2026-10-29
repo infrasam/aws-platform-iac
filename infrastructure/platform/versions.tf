@@ -17,3 +17,21 @@ terraform {
     }
   }
 }
+
+# Kubernetes connection, built from the cluster stack's kubeconfig
+provider "kubernetes" {
+  host                   = local.cluster.server
+  cluster_ca_certificate = base64decode(local.cluster["certificate-authority-data"])
+  client_certificate     = base64decode(local.user["client-certificate-data"])
+  client_key             = base64decode(local.user["client-key-data"])
+}
+
+# Helm uses the same Kubernetes connection
+provider "helm" {
+  kubernetes = {
+    host                   = local.cluster.server
+    cluster_ca_certificate = base64decode(local.cluster["certificate-authority-data"])
+    client_certificate     = base64decode(local.user["client-certificate-data"])
+    client_key             = base64decode(local.user["client-key-data"])
+  }
+}
