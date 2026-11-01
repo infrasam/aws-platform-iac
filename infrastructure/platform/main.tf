@@ -27,3 +27,28 @@ resource "helm_release" "argocd" {
   chart      = "argo-cd"
   version    = var.argocd_chart_version
 }
+
+# GitOps Bridge: registers the cluster in Argo CD and hands infrastructure facts to ApplicationSets
+resource "kubernetes_secret_v1" "cluster" {
+  metadata {
+    name      = "in-cluster"
+    namespace = helm_release.argocd.namespace
+
+    labels = {
+      "argocd.argoproj.io/secret-type" = "cluster"
+      environment                      = var.environment
+    }
+
+    annotations = {
+      aws_region   = var.region
+      aws_vpc_id   = data.terraform_remote_state.cluster.outputs.vpc_id
+      cluster_name = data.terraform_remote_state.cluster.outputs.cluster_name
+    }
+  }
+
+  data = {
+    name   = "in-cluster"
+    server = "https://kubernetes.default.svc"
+    config = jsonencode({ tlsClientConfig = { insecure = false } })
+  }
+}
