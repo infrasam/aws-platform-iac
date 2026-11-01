@@ -21,3 +21,15 @@ variable "argocd_chart_version" {
   description = "Version of the argo-cd Helm chart"
   type        = string
 }
+
+# argocd-apps Helm chart version, used to create the bootstrap Application
+variable "argocd_apps_chart_version" {
+  description = "Version of the argocd-apps Helm chart"
+  type        = string
+}
+
+# Git repository that Argo CD syncs everything else from
+variable "gitops_repo_url" {
+  description = "URL of the GitOps repository"
+  type        = string
+}

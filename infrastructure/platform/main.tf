@@ -52,3 +52,40 @@ resource "kubernetes_secret_v1" "cluster" {
     config = jsonencode({ tlsClientConfig = { insecure = false } })
   }
 }
+
+# Root Application: points Argo CD at the GitOps repository, everything else is defined there
+resource "helm_release" "bootstrap" {
+  name      = "bootstrap"
+  namespace = helm_release.argocd.namespace
+
+  repository = "https://argoproj.github.io/argo-helm"
+  chart      = "argocd-apps"
+  version    = var.argocd_apps_chart_version
+
+  values = [yamlencode({
+    applications = {
+      bootstrap = {
+        namespace = helm_release.argocd.namespace
+        project   = "default"
+        source = {
+          repoURL        = var.gitops_repo_url
+          targetRevision = "main"
+          path           = "bootstrap"
+        }
+        destination = {
+          server    = "https://kubernetes.default.svc"
+          namespace = helm_release.argocd.namespace
+        }
+        syncPolicy = {
+          automated = {
+            prune    = true
+            selfHeal = true
+          }
+        }
+      }
+    }
+  })]
+
+  # The cluster must be registered before the ApplicationSets look for it
+  depends_on = [kubernetes_secret_v1.cluster]
+}
