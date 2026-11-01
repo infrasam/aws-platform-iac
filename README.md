@@ -4,9 +4,11 @@
 ![AWS](https://img.shields.io/badge/AWS-232F3E?style=for-the-badge&logo=amazonwebservices&logoColor=white)
 ![Talos](https://img.shields.io/badge/Talos_Linux-FF7300?style=for-the-badge&logoColor=white)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)
+![ArgoCD](https://img.shields.io/badge/ArgoCD-EF7B4D?style=for-the-badge&logo=argo&logoColor=white)
+![Helm](https://img.shields.io/badge/Helm-0F1689?style=for-the-badge&logo=helm&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
 
-A Kubernetes platform on **AWS**, provisioned end to end with **Terraform**. The network, the compute nodes and a **Talos Linux** cluster are all declared as code, with remote state in S3, pinned versions, and a pull request workflow where every change is formatted, validated and scanned for secrets before it reaches `main`.
+A Kubernetes platform on **AWS**, provisioned end to end with **Terraform**. The network, the compute nodes, a **Talos Linux** cluster and **Argo CD** are all declared as code, with remote state in S3, pinned versions, and a pull request workflow where every change is formatted, validated and scanned for secrets before it reaches `main`.
 
 ---
 
@@ -30,12 +32,15 @@ flowchart LR
                 az_b["Subnet b<br/><code>10.0.1.0/24</code>"]
                 az_c["Subnet c<br/><code>10.0.2.0/24</code>"]
             end
-            node["☸ Talos Node<br/><code>t4g.medium · arm64<br/>Kubernetes control plane</code>"]
+            subgraph node["☸ Talos Node · t4g.medium · arm64"]
+                argocd["🚀 Argo CD"]
+            end
         end
     end
 
     tf ==>|"state"| s3
     tf ==>|"Talos API :50000"| node
+    tf ==>|"Helm"| argocd
     cli -.->|"Kubernetes API :6443"| node
     igw --- azs
     az_a --- node
@@ -44,7 +49,8 @@ flowchart LR
     style aws fill:#161b22,stroke:#58a6ff,color:#58a6ff,stroke-width:2px
     style vpc fill:#1a2332,stroke:#3fb950,color:#3fb950,stroke-width:2px
     style azs fill:transparent,stroke:none
-    style node fill:#326ce5,stroke:#4a8af4,color:#fff
+    style node fill:#1a2332,stroke:#326ce5,color:#adbac7,stroke-width:2px
+    style argocd fill:#2a1f1f,stroke:#ef7b4d,color:#adbac7
     style s3 fill:#2d333b,stroke:#444c56,color:#adbac7
 ```
 
@@ -69,6 +75,8 @@ sequenceDiagram
     TF->>N: Bootstraps etcd (once)
     N-->>TF: Admin kubeconfig
     TF->>S3: Stores kubeconfig and talosconfig as sensitive outputs
+    TF->>S3: Platform stack reads the kubeconfig from the cluster state
+    TF->>N: Installs Argo CD with Helm
 ```
 
 **How it works:**
@@ -76,7 +84,8 @@ sequenceDiagram
 1. The **network** module creates the VPC, one public subnet per availability zone, the internet gateway and a security group
 2. The **node** module looks up the official Talos AMI for the pinned version and starts the EC2 instances with an Elastic IP each
 3. The **talos-cluster** module generates the cluster secrets, renders and applies the machine configuration, and bootstraps etcd
-4. `make credentials` writes the admin kubeconfig and talosconfig to private files outside the repository
+4. The **platform** stack reads the kubeconfig from the cluster stack's remote state and installs Argo CD with Helm
+5. `make credentials` writes the admin kubeconfig and talosconfig to private files outside the repository
 
 ---
 
@@ -120,6 +129,14 @@ sequenceDiagram
 | **Bootstrap** | etcd initialised once on the first control plane node |
 | **Credentials** | Admin kubeconfig (auto-renewed by Terraform) and talosconfig as sensitive outputs |
 
+### Platform
+
+| Component | Description |
+|-----------|-------------|
+| **Remote state** | The platform stack reads the cluster's kubeconfig with `terraform_remote_state`, so no credentials are copied between stacks |
+| **Providers** | Helm and Kubernetes providers configured from that kubeconfig; the stack never talks to the AWS API |
+| **Argo CD** | Installed with `helm_release` from the official `argo-cd` chart, version pinned per environment |
+
 ---
 
 ## Repository Structure
@@ -130,6 +147,8 @@ sequenceDiagram
 │   ├── bootstrap/                  # S3 bucket for Terraform state
 │   │   └── environments/           #   dev.tfvars, dev.backend.hcl
 │   ├── cluster/                    # Network, nodes and Talos cluster
+│   │   └── environments/           #   dev.tfvars, dev.backend.hcl
+│   ├── platform/                   # Argo CD on the cluster
 │   │   └── environments/           #   dev.tfvars, dev.backend.hcl
 │   └── modules/
 │       ├── network/                # VPC, subnets, routing, security group
@@ -177,10 +196,12 @@ make login                 # authenticate to AWS
 make init                  # providers and S3 backend
 make plan                  # STACK=cluster and ENV=dev by default
 make apply
+make apply STACK=platform  # Argo CD
 make credentials           # kubeconfig and talosconfig to ~/.kube and ~/.talos
 
 export KUBECONFIG=~/.kube/aws-platform-iac-dev.yaml
 kubectl get nodes
+kubectl -n argocd port-forward svc/argocd-server 8080:443
 ```
 
 The admin CIDR for the security group is taken from the current public IP at runtime and is never committed.
@@ -194,7 +215,8 @@ The admin CIDR for the security group is taken from the current public IP at run
 - **`for_each` over maps**: subnets, nodes and Elastic IPs have stable addresses, so adding or removing one never recreates the others
 - **Talos on Graviton**: immutable nodes with no SSH and a fully declarative configuration, running on arm64 instances
 - **Endpoint vs node addressing**: Talos API calls connect to the public Elastic IP but target the node's private IP, so the node never has to route traffic back to itself through the internet gateway
-- **Pinned everything**: Terraform version, provider constraints with a committed lock file, and a single `talos_version` that drives both the AMI and the config contract
+- **Stacks share data through remote state**: the platform stack reads the cluster stack's outputs from S3 instead of copying credentials, so each stack stays independent but connected
+- **Pinned everything**: Terraform version, the Argo CD chart version, provider constraints with a committed lock file, and a single `talos_version` that drives both the AMI and the config contract
 
 ---
 
