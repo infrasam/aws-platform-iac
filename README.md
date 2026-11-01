@@ -10,6 +10,8 @@
 
 A Kubernetes platform on **AWS**, provisioned end to end with **Terraform**. The network, the compute nodes, a **Talos Linux** cluster and **Argo CD** are all declared as code, with remote state in S3, pinned versions, and a pull request workflow where every change is formatted, validated and scanned for secrets before it reaches `main`.
 
+Terraform stops at the cluster and Argo CD. Everything running on top is owned by the GitOps repository [aws-platform-gitops](https://github.com/infrasam/aws-platform-gitops), connected through a **GitOps Bridge**.
+
 ---
 
 ## Architecture Overview
@@ -77,6 +79,8 @@ sequenceDiagram
     TF->>S3: Stores kubeconfig and talosconfig as sensitive outputs
     TF->>S3: Platform stack reads the kubeconfig from the cluster state
     TF->>N: Installs Argo CD with Helm
+    TF->>N: Creates the cluster Secret with infrastructure metadata
+    TF->>N: Creates the bootstrap Application
 ```
 
 **How it works:**
@@ -85,7 +89,43 @@ sequenceDiagram
 2. The **node** module looks up the official Talos AMI for the pinned version and starts the EC2 instances with an Elastic IP each
 3. The **talos-cluster** module generates the cluster secrets, renders and applies the machine configuration, and bootstraps etcd
 4. The **platform** stack reads the kubeconfig from the cluster stack's remote state and installs Argo CD with Helm
-5. `make credentials` writes the admin kubeconfig and talosconfig to private files outside the repository
+5. The same stack creates the **GitOps Bridge**: a cluster Secret with infrastructure metadata and a bootstrap Application pointing at the GitOps repository
+6. `make credentials` writes the admin kubeconfig and talosconfig to private files outside the repository
+
+---
+
+## GitOps Bridge
+
+Terraform knows the infrastructure, Argo CD knows the workloads. The bridge hands facts from one to the other, so ApplicationSets can use values such as the VPC ID without anyone copying them by hand.
+
+```mermaid
+flowchart LR
+    subgraph iac["📦 aws-platform-iac"]
+        tf["🛠 Terraform<br/><i>platform stack</i>"]
+    end
+
+    subgraph cluster["☸ Kubernetes Cluster"]
+        secret["🔑 Cluster Secret<br/><code>label: environment<br/>annotations: aws_region,<br/>aws_vpc_id, cluster_name</code>"]
+        boot["🚀 bootstrap Application"]
+        appset["ApplicationSet<br/><i>cluster generator</i>"]
+    end
+
+    subgraph gitops["📦 aws-platform-gitops"]
+        repo["bootstrap/ · environments/ · infrastructure/"]
+    end
+
+    tf ==>|"Creates"| secret
+    tf ==>|"Creates"| boot
+    boot -->|"Syncs bootstrap/"| repo
+    repo --> appset
+    secret -->|"Labels and annotations"| appset
+
+    style iac fill:#161b22,stroke:#7b42bc,color:#9a6dd7,stroke-width:2px
+    style cluster fill:#161b22,stroke:#3fb950,color:#3fb950,stroke-width:2px
+    style gitops fill:#161b22,stroke:#ef7b4d,color:#ef7b4d,stroke-width:2px
+```
+
+Terraform only knows **where** the GitOps repository is, never what is in it.
 
 ---
 
@@ -136,6 +176,8 @@ sequenceDiagram
 | **Remote state** | The platform stack reads the cluster's kubeconfig with `terraform_remote_state`, so no credentials are copied between stacks |
 | **Providers** | Helm and Kubernetes providers configured from that kubeconfig; the stack never talks to the AWS API |
 | **Argo CD** | Installed with `helm_release` from the official `argo-cd` chart, version pinned per environment |
+| **Cluster Secret** | Registers the cluster in Argo CD and carries the environment label and infrastructure annotations |
+| **Bootstrap** | One Application, created with the `argocd-apps` chart, that points Argo CD at the GitOps repository |
 
 ---
 
@@ -148,7 +190,7 @@ sequenceDiagram
 │   │   └── environments/           #   dev.tfvars, dev.backend.hcl
 │   ├── cluster/                    # Network, nodes and Talos cluster
 │   │   └── environments/           #   dev.tfvars, dev.backend.hcl
-│   ├── platform/                   # Argo CD on the cluster
+│   ├── platform/                   # Argo CD, cluster Secret, bootstrap Application
 │   │   └── environments/           #   dev.tfvars, dev.backend.hcl
 │   └── modules/
 │       ├── network/                # VPC, subnets, routing, security group
@@ -215,6 +257,8 @@ The admin CIDR for the security group is taken from the current public IP at run
 - **`for_each` over maps**: subnets, nodes and Elastic IPs have stable addresses, so adding or removing one never recreates the others
 - **Talos on Graviton**: immutable nodes with no SSH and a fully declarative configuration, running on arm64 instances
 - **Endpoint vs node addressing**: Talos API calls connect to the public Elastic IP but target the node's private IP, so the node never has to route traffic back to itself through the internet gateway
+- **Clear ownership between repositories**: Terraform owns the cloud side and the first object in Argo CD, the GitOps repository owns everything on the cluster
+- **Bootstrap through a Helm chart**: the `argocd-apps` chart renders the Application at apply time, so a new environment works from scratch without the Argo CD CRDs existing at plan time
 - **Stacks share data through remote state**: the platform stack reads the cluster stack's outputs from S3 instead of copying credentials, so each stack stays independent but connected
 - **Pinned everything**: Terraform version, the Argo CD chart version, provider constraints with a committed lock file, and a single `talos_version` that drives both the AMI and the config contract
 
