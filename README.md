@@ -199,7 +199,8 @@ Terraform only knows **where** the GitOps repository is, never what is in it.
 │
 ├── .github/workflows/ci.yaml       # fmt, validate per stack, gitleaks
 ├── .pre-commit-config.yaml         # gitleaks and terraform fmt before every commit
-├── .terraform-version              # Pinned Terraform version (tfenv)
+├── .terraform-version              # Pinned Terraform version (tfenv), also used by CI
+├── renovate.json                   # Automated dependency updates
 └── Makefile                        # init, plan, apply, credentials per stack and environment
 ```
 
@@ -211,6 +212,7 @@ Each stack has its own state. Environments share the same code and only differ i
 
 ```mermaid
 flowchart LR
+    renovate["🔄 Renovate<br/><code>version bump PR</code>"] --> pr
     branch["🌿 Branch"] --> hooks["🪝 pre-commit<br/><code>gitleaks · fmt</code>"]
     hooks --> pr["📬 Pull Request"]
     pr --> ci{"✅ CI<br/><code>fmt · validate · gitleaks</code>"}
@@ -226,6 +228,8 @@ flowchart LR
 - `main` is protected by a ruleset: pull request required, all CI checks required, no force pushes
 - CI validates each stack with `terraform init -backend=false`, so it needs no cloud credentials
 - Changes are applied from `main` after merge, so `main` always matches what is deployed
+- **Renovate** opens pull requests for new Terraform providers, GitHub Actions, pre-commit hooks, the Terraform version and the Argo CD charts. Chart versions in `.tfvars` are tracked through a `# renovate:` comment on the line above
+- The Talos version is updated by hand on purpose: it is part of the cluster's configuration contract and its upgrade is a planned operation
 
 ---
 
