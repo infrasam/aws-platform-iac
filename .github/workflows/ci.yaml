@@ -15,9 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # Same Terraform version as local development, read from .terraform-version
+      - id: terraform
+        run: echo "version=$(cat .terraform-version)" >> "$GITHUB_OUTPUT"
       - uses: hashicorp/setup-terraform@v4
         with:
-          terraform_version: 1.16.6
+          terraform_version: ${{ steps.terraform.outputs.version }}
       - run: terraform fmt -check -recursive
 
   # Check that each stack is valid Terraform, without touching AWS
@@ -31,9 +34,12 @@ jobs:
         working-directory: infrastructure/${{ matrix.stack }}
     steps:
       - uses: actions/checkout@v7
+      # Same Terraform version as local development, read from .terraform-version
+      - id: terraform
+        run: echo "version=$(cat "$GITHUB_WORKSPACE/.terraform-version")" >> "$GITHUB_OUTPUT"
       - uses: hashicorp/setup-terraform@v4
         with:
-          terraform_version: 1.16.6
+          terraform_version: ${{ steps.terraform.outputs.version }}
       - run: terraform init -backend=false
       - run: terraform validate
 
