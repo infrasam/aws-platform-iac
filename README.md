@@ -148,7 +148,7 @@ Terraform only knows **where** the GitOps repository is, never what is in it.
 | **VPC** | `10.0.0.0/16` with DNS support and hostnames |
 | **Subnets** | One public `/24` per availability zone, defined as a map so new zones never renumber existing ones |
 | **Internet Gateway** | Default route for all subnets through a shared route table |
-| **Security Group** | Free traffic between cluster nodes; Talos API (50000) and Kubernetes API (6443) only from admin CIDRs |
+| **Security Group** | Free traffic between cluster nodes; Talos API (50000), Kubernetes API (6443) and HTTPS (443) only from admin CIDRs |
 
 ### Compute
 
