@@ -41,6 +41,20 @@ resource "aws_vpc_security_group_ingress_rule" "kubernetes_api" {
   description       = "Kubernetes API from admin"
 }
 
+
+# HTTPS from admin IPs, used by the Gateway for platform UIs
+resource "aws_vpc_security_group_ingress_rule" "https" {
+  for_each = toset(var.admin_cidrs)
+
+  security_group_id = aws_security_group.cluster.id
+  cidr_ipv4         = each.value
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+  description       = "HTTPS from admin"
+}
+
+
 # Nodes may reach anything outbound (images, updates, AWS APIs)
 resource "aws_vpc_security_group_egress_rule" "all" {
   security_group_id = aws_security_group.cluster.id
