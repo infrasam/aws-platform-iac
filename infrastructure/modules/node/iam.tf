@@ -2,6 +2,11 @@
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
+locals {
+  # SSM path for this environment's parameters, names starting with "aws" or "ssm" are reserved by AWS
+  ssm_parameter_prefix = "/platform/${var.name_prefix}"
+}
+
 # Only EC2 instances may use the node role
 data "aws_iam_policy_document" "assume" {
   statement {
@@ -29,7 +34,7 @@ data "aws_iam_policy_document" "ssm_read" {
       "ssm:GetParametersByPath",
     ]
     resources = [
-      "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter/${var.name_prefix}/*",
+      "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_parameter_prefix}/*",
     ]
   }
 }

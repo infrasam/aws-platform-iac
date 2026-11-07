@@ -40,9 +40,10 @@ resource "kubernetes_secret_v1" "cluster" {
     }
 
     annotations = {
-      aws_region   = var.region
-      aws_vpc_id   = data.terraform_remote_state.cluster.outputs.vpc_id
-      cluster_name = data.terraform_remote_state.cluster.outputs.cluster_name
+      aws_region           = var.region
+      aws_vpc_id           = data.terraform_remote_state.cluster.outputs.vpc_id
+      cluster_name         = data.terraform_remote_state.cluster.outputs.cluster_name
+      ssm_parameter_prefix = data.terraform_remote_state.cluster.outputs.ssm_parameter_prefix
     }
   }
 

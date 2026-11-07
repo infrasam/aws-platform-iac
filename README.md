@@ -105,7 +105,7 @@ flowchart LR
     end
 
     subgraph cluster["☸ Kubernetes Cluster"]
-        secret["🔑 Cluster Secret<br/><code>label: environment<br/>annotations: aws_region,<br/>aws_vpc_id, cluster_name</code>"]
+        secret["🔑 Cluster Secret<br/><code>label: environment<br/>annotations: aws_region,<br/>aws_vpc_id, cluster_name,<br/>ssm_parameter_prefix</code>"]
         boot["🚀 bootstrap Application"]
         appset["ApplicationSet<br/><i>cluster generator</i>"]
     end
@@ -157,7 +157,7 @@ Terraform only knows **where** the GitOps repository is, never what is in it.
 | **EC2** | `t4g.medium` Graviton (arm64) instances, one per entry in the `nodes` map |
 | **Talos AMI** | Looked up by version and architecture, restricted to Sidero Labs' AWS account |
 | **Hardening** | IMDSv2 required, encrypted gp3 root volume |
-| **IAM role** | Node instance profile with read access to the environment's own SSM parameter path only, used by in-cluster controllers |
+| **IAM role** | Node instance profile with read access to the environment's own SSM path (`/platform/<cluster>/`) only, used by in-cluster controllers |
 | **Elastic IP** | Stable public address per node, so the cluster endpoint and certificates survive stop and start |
 
 ### Cluster
