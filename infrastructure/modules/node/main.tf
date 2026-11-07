@@ -22,11 +22,15 @@ resource "aws_instance" "this" {
   instance_type          = var.instance_type
   subnet_id              = var.subnet_ids[each.value]
   vpc_security_group_ids = [var.security_group_id]
+  iam_instance_profile   = aws_iam_instance_profile.node.name
 
   # Only allow the secure version of the metadata service (IMDSv2)
+  # Hop limit 2 lets pods reach it through the container network
   metadata_options {
-    http_tokens = "required"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 2
   }
+
 
   # Encrypted system disk
   root_block_device {
