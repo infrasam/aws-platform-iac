@@ -29,3 +29,9 @@ output "vpc_id" {
   description = "ID of the VPC"
   value       = module.network.vpc_id
 }
+
+# SSM parameter path, handed over to Argo CD by the platform stack
+output "ssm_parameter_prefix" {
+  description = "SSM parameter path for this environment"
+  value       = module.node.ssm_parameter_prefix
+}
