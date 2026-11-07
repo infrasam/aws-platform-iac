@@ -5,7 +5,7 @@ state_bucket = "aws-platform-iac-dev-tfstate-271825827554"
 
 # Argo CD Helm chart
 # renovate: datasource=helm depName=argo-cd registryUrl=https://argoproj.github.io/argo-helm
-argocd_chart_version = "10.11.6"
+argocd_chart_version = "10.14.0"
 
 # Bootstrap: where Argo CD finds everything else
 # renovate: datasource=helm depName=argocd-apps registryUrl=https://argoproj.github.io/argo-helm
