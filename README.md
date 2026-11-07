@@ -157,6 +157,7 @@ Terraform only knows **where** the GitOps repository is, never what is in it.
 | **EC2** | `t4g.medium` Graviton (arm64) instances, one per entry in the `nodes` map |
 | **Talos AMI** | Looked up by version and architecture, restricted to Sidero Labs' AWS account |
 | **Hardening** | IMDSv2 required, encrypted gp3 root volume |
+| **IAM role** | Node instance profile with read access to the environment's own SSM parameter path only, used by in-cluster controllers |
 | **Elastic IP** | Stable public address per node, so the cluster endpoint and certificates survive stop and start |
 
 ### Cluster
@@ -270,4 +271,4 @@ The admin CIDR for the security group is taken from the current public IP at run
 
 ## Limitations
 
-This is a single-environment lab rather than a production setup: the cluster runs one control plane node, nodes sit in public subnets instead of private subnets behind NAT, and `terraform apply` runs from a workstation because the AWS account's managed service control policy does not allow the IAM OIDC provider needed for keyless CI deployments.
+This is a single-environment lab rather than a production setup: the cluster runs one control plane node, nodes sit in public subnets instead of private subnets behind NAT, and `terraform apply` runs from a workstation because the AWS account's managed service control policy does not allow the IAM OIDC provider needed for keyless CI deployments. Talos has no IRSA or Pod Identity, so in-cluster AWS access goes through the node's instance profile, which is scoped to the environment's parameter path.
