@@ -234,6 +234,36 @@ flowchart LR
 
 ---
 
+## Dependency Updates
+
+This repository is delivered **push-based**: merging a Renovate pull request changes the code, and the change only reaches AWS or the cluster when Terraform is run. The GitOps repository is **pull-based**, so Argo CD applies its chart updates on its own after merge.
+
+```mermaid
+flowchart LR
+    pr["🔄 Renovate PR"] --> merge["🔒 Merge to main"]
+    merge --> pull["git pull"]
+    pull --> kind{"What changed?"}
+    kind -->|"Actions, pre-commit hooks"| none["✅ Nothing to run"]
+    kind -->|".terraform-version"| tfenv["tfenv install"]
+    kind -->|"Provider lock file"| init["make init + make plan<br/><code>expect No changes</code>"]
+    kind -->|"Chart version in .tfvars"| apply["make plan + make apply<br/><code>STACK=platform</code>"]
+
+    style none fill:#1f2a1f,stroke:#3fb950,color:#adbac7
+    style apply fill:#7b42bc,stroke:#9a6dd7,color:#fff
+```
+
+| Update | Files | After merge |
+|--------|-------|-------------|
+| **GitHub Actions** | `.github/workflows/` | Nothing, used by the next CI run |
+| **pre-commit hooks** | `.pre-commit-config.yaml` | Nothing, installed on the next commit |
+| **Terraform** | `.terraform-version` | `tfenv install`, CI reads the same file |
+| **Providers** | `.terraform.lock.hcl` per stack | `make init STACK=<stack>`, then `make plan STACK=<stack>` must show no changes |
+| **Argo CD charts** | `infrastructure/platform/environments/<env>.tfvars` | `make plan STACK=platform`, review the `version` line, `make apply STACK=platform` |
+
+Several pending updates can be merged first and applied together, so a component moves straight to the newest version in one apply.
+
+---
+
 ## Getting Started
 
 **Requirements:** Terraform (version in `.terraform-version`), AWS CLI v2, `talosctl`, `kubectl`, `make`, `pre-commit`.
