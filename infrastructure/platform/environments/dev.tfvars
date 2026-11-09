@@ -9,5 +9,5 @@ argocd_chart_version = "10.15.0"
 
 # Bootstrap: where Argo CD finds everything else
 # renovate: datasource=helm depName=argocd-apps registryUrl=https://argoproj.github.io/argo-helm
-argocd_apps_chart_version = "2.0.7"
+argocd_apps_chart_version = "2.0.8"
 gitops_repo_url           = "https://github.com/infrasam/aws-platform-gitops.git"
